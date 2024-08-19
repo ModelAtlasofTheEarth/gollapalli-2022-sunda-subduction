@@ -1,0 +1,102 @@
+name: New actions
+on:
+    push:
+        branches:
+            - 'main'
+        paths:
+            - '.github/**'
+
+jobs:
+    find-repos:
+        if: ${{ github.event.repository.name == 'mate-model-template' }}
+        runs-on: ubuntu-latest
+        outputs:
+            repo_matrix: ${{ steps.found-repos.outputs.repos }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup python
+              uses: actions/setup-python@v5
+              with:
+                python-version: "3.10"
+                cache: "pip"
+            - run: pip install -r .github/scripts/requirements.txt
+
+            - name: create m@te token
+              uses: actions/create-github-app-token@v1
+              id: app-token
+              with:
+                app-id: ${{ vars.APP_ID }}
+                private-key: ${{ secrets.APP_PRIVATE_KEY }}
+                owner: ${{ github.repository_owner }}
+
+            - name: Find repos
+              id: found-repos
+              env:
+                TOKEN: ${{ steps.app-token.outputs.token }}
+                REPO: ${{ github.event.repository.name }}
+                ORG: ${{ github.repository_owner }}
+              run: |
+                REPOS=$(python3 .github/scripts/find_repos.py)
+                echo "repos=$(jq -cn --argjson environments "$REPOS" '{repo: $environments}')" >> $GITHUB_OUTPUT
+                jq -cn --argjson environments "$REPOS" '{repo: $environments}'
+
+    copy-PR:
+        needs: find-repos
+        runs-on: ubuntu-latest
+        strategy:
+            matrix: ${{ fromJson(needs.find-repos.outputs.repo_matrix) }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup python
+              uses: actions/setup-python@v5
+              with:
+                python-version: "3.10"
+                cache: "pip"
+            - run: pip install -r .github/scripts/requirements.txt
+
+            - name: create m@te token for repo
+              uses: actions/create-github-app-token@v1
+              id: app-token
+              with:
+                app-id: ${{ vars.APP_ID }}
+                private-key: ${{ secrets.APP_PRIVATE_KEY }}
+                owner: ${{ github.repository_owner }}
+                repositories: ${{ matrix.repo }}
+
+            - name: create branch
+              env:
+                GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+                REPO_OWNER: ${{ github.repository_owner }}
+                REPO_NAME: ${{ matrix.repo }}
+                BRANCH_NAME: 'template-update'
+              run: |
+                python3 .github/scripts/create_branch.py
+
+            - name: copy files to repo
+              env:
+                GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+                SOURCE_REPO_OWNER: ${{ github.repository_owner }}
+                SOURCE_REPO_NAME: ${{ github.event.repository.name }}
+                SOURCE_PATH: '.github'
+                TARGET_REPO_OWNER: ${{ github.repository_owner }}
+                TARGET_REPO_NAME: ${{ matrix.repo }}
+                TARGET_REPO_BRANCH: 'template-update'
+                TARGET_PATH: '.github'
+              run: |
+                python3 .github/scripts/copy_files.py
+
+            - name: create pull request
+              env:
+                GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+                REPO_OWNER: ${{ github.repository_owner }}
+                REPO_NAME: ${{ matrix.repo }}
+                PR_TITLE: "New scripts from template repo"
+                GITHUB_EVENT_PATH: ${{ github.event_path }}
+                HEAD_BRANCH: 'template-update'
+                BASE_BRANCH: 'main'
+              run: |
+                python3 .github/scripts/pull_request.py

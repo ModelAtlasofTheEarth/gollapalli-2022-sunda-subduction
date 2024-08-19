@@ -1,0 +1,4 @@
+pygithub==2.2.0
+ruamel.yaml<0.18.0
+ruamel.yaml.string
+pyyaml
