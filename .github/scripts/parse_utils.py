@@ -104,9 +104,17 @@ def ro_crate_to_cff(ro_crate):
 
     # Extract authors
     authors = root_entity.get('creator', [])
+    # If 'authors' is a dictionary (single author), convert it to a list for uniform handling
+    if isinstance(authors, dict):
+        authors = [authors]
     author_list = []
-    for author_id in authors:
-        author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id['@id']), None)
+    #for author_id in authors:
+    #    author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id['@id']), None)
+    for author in authors:
+        # Ensure we access the correct field
+        author_id = author.get('@id')
+        author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id), None)
+        
         if author_entity:
             author_list.append({
                 'family-names': author_entity.get('familyName', ''),
