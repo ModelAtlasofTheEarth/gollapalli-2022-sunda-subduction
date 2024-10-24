@@ -102,25 +102,25 @@ def ro_crate_to_cff(ro_crate):
     date_released = root_entity.get('datePublished', '').split('T')[0]
     url = root_entity.get('url', 'No URL provided')
 
-    # Extract authors
-    authors = root_entity.get('creator', [])
-    # If 'authors' is a dictionary (single author), convert it to a list for uniform handling
-    if isinstance(authors, dict):
-        authors = [authors]
-    author_list = []
-    #for author_id in authors:
-    #    author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id['@id']), None)
     for author in authors:
-        # Ensure we access the correct field
-        author_id = author.get('@id')
-        author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id), None)
-        
-        if author_entity:
-            author_list.append({
-                'family-names': author_entity.get('familyName', ''),
-                'given-names': author_entity.get('givenName', ''),
-                'orcid': author_id['@id']
-            })
+        # Ensure we access the correct field and check if author is a dict
+        if isinstance(author, dict):
+            author_id = author.get('@id')
+            
+            # Check if author_id is not None
+            if author_id is not None:
+                author_entity = next((item for item in ro_crate['@graph'] if item['@id'] == author_id), None)
+                
+                if author_entity:
+                    author_list.append({
+                        'family-names': author_entity.get('familyName', ''),
+                        'given-names': author_entity.get('givenName', ''),
+                        'orcid': author_id  # This is now a string
+                    })
+            else:
+                print(f"No '@id' found for author: {author}")
+        else:
+            print(f"Unexpected author format: {author}")
 
     # Construct the CFF object
     cff_dict = {
