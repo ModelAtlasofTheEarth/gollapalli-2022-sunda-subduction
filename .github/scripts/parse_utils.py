@@ -102,6 +102,15 @@ def ro_crate_to_cff(ro_crate):
     date_released = root_entity.get('datePublished', '').split('T')[0]
     url = root_entity.get('url', 'No URL provided')
 
+
+    # Extract authors
+    authors = root_entity.get('creator', [])
+    # If 'authors' is a dictionary (single author), convert it to a list for uniform handling
+    if isinstance(authors, dict):
+        authors = [authors]
+
+    author_list = []
+
     for author in authors:
         # Ensure we access the correct field and check if author is a dict
         if isinstance(author, dict):
