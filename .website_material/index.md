@@ -31,14 +31,25 @@ creators:
   - name: Thyagarajulu
     family_name: Gollapalli
     ORCID: 0000-0001-9394-4104
-associated_publication: {}
+associated_publication:
+  title: Unravelling tectonic coupling and loading along the Sunda margin through 3-D regional numerical  modelling
+  doi: https://doi.org/10.26180/21664034.v1
+  date: 2022-12
+  authors:
+    - name: Thyagarajulu
+      family_name: Gollapalli
 compute_info:
   name: Gadi Supercomputer
   organisation: National Computational Infrastructure
   url: https://pid.nci.org.au/doi/f5966_0057_9267_4579
   doi: https://doi.org/10.25914/608bfd1838db2
-research_tags: []
-compute_tags: []
+research_tags:
+  - Subduction
+  - Plate boundary
+compute_tags:
+  - Python
+  - Finite element
+  - Particle-in-cell
 funder:
   name: National Computational Infrastructure
   doi: https://ror.org/04yx6dh41
