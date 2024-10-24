@@ -1,0 +1,66 @@
+name: New files
+on:
+    push:
+        branches:
+            - 'main'
+        paths:
+            - '.website_material/**'
+
+jobs:
+    # Copy files to website repo
+    copy-files:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+
+          - name: setup python
+            uses: actions/setup-python@v5
+            with:
+              python-version: "3.10"
+              cache: "pip"
+          - run: pip install -r .github/scripts/requirements.txt
+
+          - name: check if published
+            id: check-published
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                REPO_NAME: ${{ github.repository }}
+            run: |
+                PUBLISHED=$(python3 .github/scripts/check_published.py)
+                echo "published=${PUBLISHED}" >> $GITHUB_OUTPUT
+
+          - name: create token for website repo
+            if: ${{ steps.check-published.outputs.published == 'True' }}
+            uses: actions/create-github-app-token@v1
+            id: app-token
+            with:
+              app-id: ${{ vars.APP_ID }}
+              private-key: ${{ secrets.APP_PRIVATE_KEY }}
+              owner: ${{ github.repository_owner }}
+              repositories: 'website'
+
+          - name: create branch
+            if: ${{ steps.check-published.outputs.published == 'True' }}
+            env:
+              GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+              REPO_OWNER: ${{ github.repository_owner }}
+              REPO_NAME: 'website'
+              BRANCH_NAME: ${{ github.event.repository.name }}
+            run: |
+              python3 .github/scripts/create_branch.py
+
+
+          - name: copy files to website repo
+            if: ${{ steps.check-published.outputs.published == 'True' }}
+            env:
+              GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+              SOURCE_REPO_OWNER: ${{ github.repository_owner }}
+              SOURCE_REPO_NAME: ${{ github.event.repository.name }}
+              SOURCE_PATH: '.website_material'
+              TARGET_REPO_OWNER: ${{ github.repository_owner }}
+              TARGET_REPO_NAME: 'website'
+              TARGET_REPO_BRANCH: ${{ github.event.repository.name }}
+              TARGET_PATH: 'src/pages/models/${{ github.event.repository.name }}'
+            run: |
+              python3 .github/scripts/copy_files.py

@@ -1,0 +1,6 @@
+# Ignore everything in the subdirectory
+model_output_data/*
+
+# Unignore the specific file in the subdirectory
+!model_output_data/README.md
+

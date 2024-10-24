@@ -1,0 +1,111 @@
+name: Copy Files
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  update-doi:
+    if: contains(github.event.label.name, 'model published')
+    runs-on: ubuntu-latest
+    outputs:
+      success: ${{ steps.update-doi.outputs.success }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - run: pip install -r .github/scripts/requirements.txt
+
+      - name: create m@te bot token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: update doi
+        id: update-doi
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO_NAME: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          SUCCESS=$(python3 .github/scripts/update_doi.py)
+          echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
+
+      - name: Clean gitkeep files from repo
+        run: |
+          git pull
+          for line in $(git ls-files | grep './gitkeep'); do
+            EXTRA_FILES=$(git ls-files $(dirname "$line") | wc -l)
+            if [ $EXTRA_FILES -ne "1" ]; then
+              rm "$line"
+            fi
+          done
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Remove unnecessary .gitkeep
+
+
+  copy-files:
+    needs: update-doi
+    if: ${{ needs.update-doi.outputs.success == 'True' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - run: pip install -r .github/scripts/requirements.txt
+
+      - name: create token for website repo
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: 'website,model_submission'
+
+      - name: create branch
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: 'website'
+          BRANCH_NAME: ${{ github.event.repository.name }}
+        run: |
+          python3 .github/scripts/create_branch.py
+
+
+      - name: copy files to website repo
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          SOURCE_REPO_OWNER: ${{ github.repository_owner }}
+          SOURCE_REPO_NAME: ${{ github.event.repository.name }}
+          SOURCE_PATH: '.website_material'
+          TARGET_REPO_OWNER: ${{ github.repository_owner }}
+          TARGET_REPO_NAME: 'website'
+          TARGET_REPO_BRANCH: ${{ github.event.repository.name }}
+          TARGET_PATH: 'src/pages/models/${{ github.event.repository.name }}'
+        run: |
+          python3 .github/scripts/copy_files.py
+
+      - name: update submission issue
+        env:
+          GITHUB_TOKEN:  ${{ steps.app-token.outputs.token }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: 'model_submission'
+          SLUG: ${{ github.event.repository.name }}
+        run: |
+          python3 .github/scripts/update_labels.py
