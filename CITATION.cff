@@ -1,1 +1,33 @@
-
+cff-version: 1.2.0
+message: If you use this model, please cite it as below.
+authors:
+- family-names: Capitanio
+  given-names: Fabio A.
+  orcid: https://orcid.org/0000-0003-2131-8723
+- family-names: Gollapalli
+  given-names: Thyagarajulu
+  orcid: https://orcid.org/0000-0001-9394-4104
+- family-names: Munukutla
+  given-names: Radhakrishna
+  orcid: https://orcid.org/0000-0001-5713-1173
+- family-names: Graciosa
+  given-names: Juan Carlos
+  orcid: _:b0
+- family-names: Mohd
+  given-names: Zuhair
+  orcid: _:b1
+- family-names: Beall
+  given-names: Adam
+  orcid: https://orcid.org/0000-0002-7182-1864
+- family-names: Dal Zilio
+  given-names: Luca
+  orcid: https://orcid.org/0000-0002-5642-0894
+title: Bridging the gap between subduction dynamics and the long-term strength of
+  the Sunda megathrust
+version: '1.0'
+doi: https://doi.org/10.25914/vw5k-q269
+date-released: '2026-11-25'
+url:
+- https://mate.science/models/gollapalli-2022-sunda-subduction/
+- https://github.com/ModelAtlasofTheEarth/gollapalli-2022-sunda-subduction/
+type: dataset
