@@ -1,0 +1,16 @@
+---
+name: Publish model
+description: Update model with doi and publish
+title: "Publish model"
+labels: ["model published"]
+
+body:
+
+- type: input
+  id: doi
+  attributes:
+    label: -> doi
+    placeholder: "https://doi.org/10.47366/sabia.v5n1a3"
+    description: "Provide the doi of your published model"
+  validations:
+    required: true

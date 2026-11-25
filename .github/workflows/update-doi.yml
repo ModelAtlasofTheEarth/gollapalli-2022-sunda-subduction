@@ -1,0 +1,51 @@
+name: Update DOI
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  update-doi:
+    if: contains(github.event.label.name, 'model published')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - run: pip install -r .github/scripts/requirements.txt
+
+      - name: create m@te bot token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: update doi
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO_NAME: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          UPDATE_WEBSITE_MATERIAL: False
+        run: |
+          python3 .github/scripts/update_doi.py
+
+      - name: Clean gitkeep files from repo
+        run: |
+          git pull
+          for line in $(git ls-files | grep './gitkeep'); do
+            EXTRA_FILES=$(git ls-files $(dirname "$line") | wc -l)
+            if [ $EXTRA_FILES -ne "1" ]; then
+              rm "$line"
+            fi
+          done
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Remove unnecessary .gitkeep

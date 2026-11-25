@@ -1,0 +1,8 @@
+# Ignore everything in the subdirectory
+model_output_data/*
+
+__pycache__
+
+# Unignore the specific file in the subdirectory
+!model_output_data/README.md
+
